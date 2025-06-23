@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 )
 
-type input struct {
+type incChirp struct {
 	Body string `json:"body"`
 }
 
 type validResp struct {
-	Valid bool `json:"valid"`
+	Cleaned string `json:"cleaned_body"`
 }
 
 type invalidResp struct {
@@ -20,7 +22,8 @@ type invalidResp struct {
 
 func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	params := input{}
+	params := incChirp{}
+
 	wentWrong := invalidResp{Error: "Something went wrong"}
 	wrongDat, _ := json.Marshal(wentWrong)
 
@@ -29,6 +32,14 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error decoding parameters: %s", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
+		w.Write(wrongDat)
+		return
+	}
+
+	if len(params.Body) == 0 {
+		log.Println("Chirp cannot be blank.")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
 		w.Write(wrongDat)
 		return
 	}
@@ -51,7 +62,7 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respBody := validResp{Valid: true}
+	respBody := validResp{Cleaned: sanitizeProfanity(params.Body)}
 
 	dat, err := json.Marshal(respBody)
 	if err != nil {
@@ -64,4 +75,25 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write(dat)
+}
+
+func sanitizeProfanity(chirp string) string {
+	badWords := []string{
+		"kerfuffle",
+		"Kerfuffle",
+		"sharbert",
+		"Sharbert",
+		"fornax",
+		"Fornax",
+	}
+
+	words := strings.Fields(chirp)
+	for i, word := range words {
+		if slices.Contains(badWords, word) {
+			words[i] = "****"
+		}
+	}
+
+	joined := strings.Join(words, " ")
+	return joined
 }
