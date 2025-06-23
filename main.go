@@ -4,16 +4,26 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync/atomic"
 )
 
+type apiConfig struct {
+	fileserverHits atomic.Int32
+}
+
 func main() {
-	const filepathRoot = "./app"
+	const filepathRoot = "."
 	const port = "8080"
-	fs := http.FileServer(http.Dir("./app"))
+	apiCfg := apiConfig{
+		fileserverHits: atomic.Int32{},
+	}
+	fs := http.FileServer(http.Dir(filepathRoot))
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.StripPrefix("/app/", fs))
-	mux.HandleFunc("/healthz/", readinessHandler)
+	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", fs)))
+	mux.HandleFunc("GET /api/healthz", handlerReadiness)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
@@ -24,17 +34,15 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func readinessHandler(w http.ResponseWriter, r *http.Request) {
-	const body = "OK"
-	const contentTypeKey = "Content-Type"
-	const contentTypeValue = "text/plain; charset=utf-8"
-	const statusCode = 200
-	const resBody = "OK"
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "<html><body><h1>Welcome, Chirpy Admin</h1><p>Chirpy has been visited %d times!</p></body></html>", cfg.fileserverHits.Load())
+}
 
-	w.Header().Add(contentTypeKey, contentTypeValue)
-	w.WriteHeader(statusCode)
-	_, err := w.Write([]byte(resBody))
-	if err != nil {
-		fmt.Printf("error writing response: %v", err)
-	}
+func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.fileserverHits.Add(1)
+		next.ServeHTTP(w, r)
+	})
 }
