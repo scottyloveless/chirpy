@@ -18,14 +18,14 @@ type Chirp struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
-type NewChirpRequest struct {
-	Body   string `json:"body"`
-	UserID string `json:"user_id"`
-}
-
 func (cfg *apiConfig) handlerAddChirp(w http.ResponseWriter, r *http.Request) {
+	type newChirpRequestParams struct {
+		Body   string `json:"body"`
+		UserID string `json:"user_id"`
+	}
+
 	decoder := json.NewDecoder(r.Body)
-	unvalidatedNewChirp := NewChirpRequest{}
+	unvalidatedNewChirp := newChirpRequestParams{}
 
 	wentWrong := invalidResp{Error: "Something went wrong"}
 	wrongDat, _ := json.Marshal(wentWrong)
