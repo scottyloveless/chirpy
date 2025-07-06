@@ -17,6 +17,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	secret         string
 }
 
 func main() {
@@ -35,6 +36,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       os.Getenv("PLATFORM"),
+		secret:         os.Getenv("SECRET"),
 	}
 
 	const filepathRoot = "."
@@ -45,6 +47,7 @@ func main() {
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", fs)))
 
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerChirpsRetrieve)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerChirpsGet)
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerChirpsCreate)
 
 	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)

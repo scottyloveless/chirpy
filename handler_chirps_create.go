@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/scottyloveless/chirpy/internal/auth"
 	"github.com/scottyloveless/chirpy/internal/database"
 )
 
@@ -25,11 +26,28 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		UserID uuid.UUID `json:"user_id"`
 	}
 
+	bearerToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Bad bearer token", err)
+		return
+	}
+
+	submittedUUID, err := auth.ValidateJWT(bearerToken, cfg.secret)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "secret not valid", err)
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		return
+	}
+
+	if params.UserID != submittedUUID {
+		respondWithError(w, http.StatusBadRequest, "Not authorized to post as this user", err)
 		return
 	}
 

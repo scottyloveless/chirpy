@@ -3,14 +3,16 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/scottyloveless/chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password string `json:"password"`
-		Email    string `json:"email"`
+		Password         string `json:"password"`
+		Email            string `json:"email"`
+		ExpiresInSeconds int    `json:"expires_in_seconds"`
 	}
 	type response struct {
 		User
@@ -37,12 +39,26 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	expiry := 0
+
+	if params.ExpiresInSeconds == 0 {
+		expiry = 3600
+	} else {
+		expiry = params.ExpiresInSeconds
+	}
+
+	jwt, err := auth.MakeJWT(dbUser.ID, cfg.secret, time.Duration(expiry))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "error making JWT", err)
+	}
+
 	respondWithJSON(w, http.StatusOK, response{
 		User: User{
 			ID:        dbUser.ID,
 			CreatedAt: dbUser.CreatedAt,
 			UpdatedAt: dbUser.UpdatedAt,
 			Email:     dbUser.Email,
+			Token:     jwt,
 		},
 	})
 }
