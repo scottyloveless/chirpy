@@ -24,6 +24,8 @@ func main() {
 	godotenv.Load()
 
 	dbURL := os.Getenv("DB_URL")
+	secret := os.Getenv("SECRET")
+	platform := os.Getenv("PLATFORM")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -35,8 +37,8 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
-		platform:       os.Getenv("PLATFORM"),
-		secret:         os.Getenv("SECRET"),
+		platform:       platform,
+		secret:         secret,
 	}
 
 	const filepathRoot = "."

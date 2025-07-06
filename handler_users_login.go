@@ -41,15 +41,16 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	expiry := 0
 
-	if params.ExpiresInSeconds == 0 {
+	if params.ExpiresInSeconds == 0 || params.ExpiresInSeconds > 3600 {
 		expiry = 3600
 	} else {
 		expiry = params.ExpiresInSeconds
 	}
 
-	jwt, err := auth.MakeJWT(dbUser.ID, cfg.secret, time.Duration(expiry))
+	jwt, err := auth.MakeJWT(dbUser.ID, cfg.secret, time.Duration(expiry)*time.Second)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error making JWT", err)
+		return
 	}
 
 	respondWithJSON(w, http.StatusOK, response{
