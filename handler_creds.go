@@ -52,10 +52,11 @@ func (cfg *apiConfig) handlerUpdateCredentials(w http.ResponseWriter, r *http.Re
 
 	respondWithJSON(w, http.StatusOK, response{
 		User: User{
-			ID:        updatedDbUser.ID,
-			Email:     updatedDbUser.Email,
-			CreatedAt: updatedDbUser.CreatedAt,
-			UpdatedAt: updatedDbUser.UpdatedAt,
+			ID:          updatedDbUser.ID,
+			Email:       updatedDbUser.Email,
+			CreatedAt:   updatedDbUser.CreatedAt,
+			UpdatedAt:   updatedDbUser.UpdatedAt,
+			IsChirpyRed: updatedDbUser.IsChirpyRed,
 		},
 	})
 }
