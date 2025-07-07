@@ -2,20 +2,31 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/scottyloveless/chirpy/internal/auth"
+	"github.com/scottyloveless/chirpy/internal/database"
 )
+
+type LoginResponse struct {
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
+}
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	type response struct {
-		User
+		LoginResponse
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -39,27 +50,30 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiry := 0
-
-	if params.ExpiresInSeconds == 0 || params.ExpiresInSeconds > 3600 {
-		expiry = 3600
-	} else {
-		expiry = params.ExpiresInSeconds
-	}
-
-	jwt, err := auth.MakeJWT(dbUser.ID, cfg.secret, time.Duration(expiry)*time.Second)
+	jwt, err := auth.MakeJWT(dbUser.ID, cfg.secret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error making JWT", err)
 		return
 	}
 
+	refreshToken := auth.MakeRefreshToken()
+
+	dbToken, err := cfg.db.InsertRefreshToken(r.Context(), database.InsertRefreshTokenParams{
+		Token:  refreshToken,
+		UserID: dbUser.ID,
+	})
+	if err != nil {
+		log.Printf("error inserting token: %v", err)
+	}
+
 	respondWithJSON(w, http.StatusOK, response{
-		User: User{
-			ID:        dbUser.ID,
-			CreatedAt: dbUser.CreatedAt,
-			UpdatedAt: dbUser.UpdatedAt,
-			Email:     dbUser.Email,
-			Token:     jwt,
+		LoginResponse: LoginResponse{
+			ID:           dbUser.ID,
+			CreatedAt:    dbUser.CreatedAt,
+			UpdatedAt:    dbUser.UpdatedAt,
+			Email:        dbUser.Email,
+			Token:        jwt,
+			RefreshToken: dbToken.Token,
 		},
 	})
 }

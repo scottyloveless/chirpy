@@ -34,7 +34,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 
 	submittedUUID, err := auth.ValidateJWT(bearerToken, cfg.secret)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "secret not valid", err)
+		respondWithError(w, http.StatusUnauthorized, "secret not valid", err)
 		return
 	}
 

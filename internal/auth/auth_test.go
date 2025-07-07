@@ -2,7 +2,6 @@ package auth
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -65,13 +64,12 @@ func TestJWT(t *testing.T) {
 	uuid1 := uuid.New()
 	uuid2 := uuid.New()
 	tokenSecret1 := "Testing123!"
-	expiresIn1 := time.Duration(60) * time.Minute
-	jwt1, err := MakeJWT(uuid1, tokenSecret1, expiresIn1)
+	jwt1, err := MakeJWT(uuid1, tokenSecret1)
 	if err != nil {
 		t.Errorf("Something is wrong making jwt: %v", err)
 		return
 	}
-	jwt2, err2 := MakeJWT(uuid2, "WrongPass1!", expiresIn1)
+	jwt2, err2 := MakeJWT(uuid2, "WrongPass1!")
 	if err2 != nil {
 		t.Errorf("Something is wrong making jwt: %v", err2)
 		return
