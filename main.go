@@ -18,6 +18,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	secret         string
+	polka_key      string
 }
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	secret := os.Getenv("SECRET")
 	platform := os.Getenv("PLATFORM")
+	polka_key := os.Getenv("POLKA_KEY")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -39,6 +41,7 @@ func main() {
 		db:             dbQueries,
 		platform:       platform,
 		secret:         secret,
+		polka_key:      polka_key,
 	}
 
 	const filepathRoot = "."
@@ -66,6 +69,7 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 
 	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.handlerChirpyRedUpgrade)
+
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
