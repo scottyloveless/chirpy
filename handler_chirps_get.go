@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/scottyloveless/chirpy/internal/database"
@@ -12,6 +13,7 @@ import (
 func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Request) {
 	var dbChirps []database.Chirp
 	var err error
+
 	author_string := r.URL.Query().Get("author_id")
 	if author_string != "" {
 		author_id, parseErr := uuid.Parse(author_string)
@@ -36,6 +38,13 @@ func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Reque
 			UpdatedAt: dbChirps.UpdatedAt,
 			Body:      dbChirps.Body,
 			UserID:    dbChirps.UserID,
+		})
+	}
+
+	sortQuery := r.URL.Query().Get("sort")
+	if sortQuery == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[j].CreatedAt.Before(chirps[i].CreatedAt)
 		})
 	}
 
