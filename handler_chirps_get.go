@@ -48,11 +48,13 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "no id provided", nil)
 		return
 	}
+
 	parsedId, err := uuid.Parse(chirpIDString)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID", err)
 		return
 	}
+
 	dbChirp, err := cfg.db.GetChirp(r.Context(), parsedId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

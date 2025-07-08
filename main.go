@@ -22,6 +22,9 @@ type apiConfig struct {
 }
 
 func main() {
+	const filepathRoot = "."
+	const port = "8080"
+
 	godotenv.Load()
 
 	dbURL := os.Getenv("DB_URL")
@@ -44,8 +47,6 @@ func main() {
 		polka_key:      polka_key,
 	}
 
-	const filepathRoot = "."
-	const port = "8080"
 	fs := http.FileServer(http.Dir(filepathRoot))
 
 	mux := http.NewServeMux()
